@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Landolt C Controller</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#111; color:#eee; margin:0; padding:20px; text-align:center; }
+    h2 { margin:20px 0 10px; }
+    button { font-size:22px; padding:15px 30px; margin:10px; border-radius:12px; border:none; cursor:pointer; width:80%; max-width:320px; }
+    .contrast-btn { background:#444; color:white; }
+    .plane-btn { background:#2a6; color:white; }
+    .plane-btn.selected { background:#0a5; box-shadow:0 0 15px #0f0; }
+    input { font-size:24px; width:120px; text-align:center; padding:8px; margin:5px; }
+    #start { background:#0a5; font-size:28px; padding:20px; margin:30px auto; display:block; width:70%; }
+  </style>
+</head>
+<body>
+  <h1>Landolt C Test</h1>
+
+  <h2>Choose stimuli contrast:</h2>
+  <button class="contrast-btn" onclick="send({contrast:1.0})">High Contrast (reference)</button>
+  <button class="contrast-btn" onclick="send({contrast:0.25})">Low Contrast (test)</button>
+
+  <h2>Define stimuli size [arcmin gap]:</h2>
+  <input type="number" id="size" value="50" step="0.1" min="10" readonly>
+
+  <h2>Stimuli change time [sec]:</h2>
+  <input type="number" id="changetime" value="1" step="0.5" min="0.1">
+
+  <h2>Choose plane (distance):</h2>
+  <button class="plane-btn" onclick="selectPlane(0.45)">45 cm</button>
+  <button class="plane-btn" onclick="selectPlane(0.58)">58 cm</button>
+  <button class="plane-btn" onclick="selectPlane(0.81)">81 cm</button>
+  <button class="plane-btn" onclick="selectPlane(1.30)">130 cm</button>
+
+  <button id="start" onclick="startTest()">START</button>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let selectedDist = 1.30;
+
+    function send(data) { socket.emit('control', data); }
+
+    function selectPlane(dist) {
+      selectedDist = dist;
+      document.querySelectorAll('.plane-btn').forEach(b => b.classList.remove('selected'));
+      event.target.classList.add('selected');
+      send({dist: dist});
+    }
+
+    function startTest() {
+      const changeSec = parseFloat(document.getElementById('changetime').value) * 1000 || 1000;
+      send({ start: true, changeSec: changeSec, dist: selectedDist });
+    }
+
+    // Highlight default 130 cm
+    setTimeout(() => {
+      const btn = Array.from(document.querySelectorAll('.plane-btn')).find(b => b.textContent.includes('130'));
+      if (btn) btn.classList.add('selected');
+    }, 300);
+  </script>
+</body>
+</html>
