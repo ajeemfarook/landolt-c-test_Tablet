@@ -3,80 +3,201 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Landolt C</title>
+  <title>Landolt C – Display</title>
   <style>
-    body { margin:0; padding:0; background:#000; overflow:hidden; height:100vh; }
-    canvas { display:block; width:100%; height:100%; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      transition: background 0s;
+    }
+    body.neg { background: #fff; }
+
+    /* Wrapper is sized + positioned by JS */
+    #wrap {
+      display: none;
+      position: absolute;
+    }
+
+    /* SVG fills the wrapper exactly */
+    #wrap svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #idle {
+      position: absolute;
+      color: #181818;
+      font-family: monospace;
+      font-size: 11px;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      pointer-events: none;
+      user-select: none;
+    }
+    body.neg #idle { color: #e0e0e0; }
+    #idle.hidden   { display: none; }
   </style>
 </head>
 <body>
-  <canvas id="c"></canvas>
+
+  <!--
+  ═══════════════════════════════════════════════════════════════
+   ISO 8596:2017 / DIN 58220  —  Standard Landolt C optotype
+  ═══════════════════════════════════════════════════════════════
+   Source: ISO 8596:2017 "Ophthalmic optics — Visual acuity
+           testing — Standard and clinical optotypes and their
+           presentation"
+           https://www.iso.org/standard/69042.html
+           Wikipedia: https://en.wikipedia.org/wiki/Landolt_C
+           Wikimedia: https://commons.wikimedia.org/wiki/File:Landolt_C.svg
+
+   Specification (confirmed from ISO 8596 §5 and Figure 1):
+     • Outer diameter        D  = reference size unit
+     • Stroke width             = D/5  (1/5 of outer diameter)
+     • Gap width                = D/5  (same as stroke — "identical to letter
+                                        C from a Snellen chart")
+     • Gap edges:               Parallel horizontal straight lines
+                                (not radial, not angled)
+     • 8 orientations possible: 0°,45°,90°,135°,180°,225°,270°,315°
+
+   SVG construction (viewBox 0 0 200 200, C centred at 100,100):
+     D=200, R=100, stroke=40, inner_r=60, gap_half=20
+     Outer circle ∩ y=±20 → x = √(100²-20²) = 97.9796
+     Inner circle ∩ y=±20 → x = √(60²-20²)  = 56.5685
+
+   Path trace (clockwise from top of gap opening at 3 o'clock):
+     M 97.9796,20          — start: outer circle top of gap
+     A 100,100 0 1,1 97.9796,-20   — outer arc CW (large, 336.9°)
+     L 56.5685,-20         — straight line left to inner circle bottom
+     A 60,60 0 1,0 56.5685,20      — inner arc CCW (large, 320.5°)
+     Z                     — straight line closes to start (top)
+  ═══════════════════════════════════════════════════════════════
+  -->
+
+  <div id="wrap">
+    <svg id="svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"
+         shape-rendering="geometricPrecision">
+      <!--
+        The <path> is translated to viewBox centre (100,100).
+        Rotation is applied here by JS — rotating around the C's own centre.
+        fill colour swaps between #fff (positive) and #000 (negative).
+      -->
+      <path id="lc"
+        d="M 97.9796,20 A 100,100 0 1,1 97.9796,-20 L 56.5685,-20 A 60,60 0 1,0 56.5685,20 Z"
+        transform="translate(100 100)"
+        fill="#ffffff"/>
+    </svg>
+  </div>
+
+  <div id="idle">Awaiting signal…</div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    // ── Device ────────────────────────────────────────────────
+    // Boox Mini Tab 7.8"  B/W mode = 300 PPI, 1404×1872
+    const DEVICE_PPI = 300;
+    const INCH_PER_M = 39.3701;
+
+    const wrap = document.getElementById('wrap');
+    const svg  = document.getElementById('svg');
+    const lc   = document.getElementById('lc');
+    const idle = document.getElementById('idle');
+    const body = document.body;
+
+    // ── State ─────────────────────────────────────────────────
+    let S = {
+      visible:          false,
+      distM:            1.30,
+      angSizeDeg:       0.833,  // full outer diameter visual angle
+      orientation:      0,      // degrees: 0=gap right, 90=down, 180=left, 270=up
+      negativeContrast: false,  // false=white-on-black, true=black-on-white
+    };
+
+    // ── Size → CSS pixels ─────────────────────────────────────
+    // ISO 8596 §6.3: angSizeDeg is the visual angle of the full outer diameter
+    // Formula: physM = 2 × distM × tan(α/2)
+    function cssSizePx(distM, angSizeDeg) {
+      const angRad = angSizeDeg * (Math.PI / 180);
+      const physM  = 2 * distM * Math.tan(angRad / 2);
+      const devPx  = physM * DEVICE_PPI * INCH_PER_M;
+      return devPx / (devicePixelRatio || 1);
+    }
+
+    // ── Render ────────────────────────────────────────────────
+    function render() {
+      if (!S.visible) {
+        wrap.style.display = 'none';
+        idle.classList.remove('hidden');
+        body.className = '';
+        return;
+      }
+
+      const px = cssSizePx(S.distM, S.angSizeDeg);
+      const cx = window.innerWidth  / 2;
+      const cy = window.innerHeight / 2;
+
+      wrap.style.display = 'block';
+      wrap.style.width   = px + 'px';
+      wrap.style.height  = px + 'px';
+      wrap.style.left    = (cx - px / 2) + 'px';
+      wrap.style.top     = (cy - px / 2) + 'px';
+
+      // Rotate the path around its own centre (100,100 in viewBox coords)
+      lc.setAttribute('transform',
+        `translate(100 100) rotate(${S.orientation})`);
+
+      // Colour: ISO 8596 §7 — optotype luminance ≤15% of background
+      // Positive (standard): dark optotype on bright background → we do white-on-black
+      // Negative: black optotype on white background
+      lc.setAttribute('fill', S.negativeContrast ? '#000000' : '#ffffff');
+      body.className = S.negativeContrast ? 'neg' : '';
+
+      idle.classList.add('hidden');
+    }
+
+    window.addEventListener('resize', () => { if (S.visible) render(); });
+
+    // ── Socket ────────────────────────────────────────────────
     const socket = io();
-    const canvas = document.getElementById('c');
-    const ctx = canvas.getContext('2d');
+    socket.on('connect',    () => socket.emit('register', 'display'));
+    socket.on('disconnect', () => { S.visible = false; render(); });
 
-    let currentDistM = 1.30;
-    let contrast = 1.0;
-    let orientation = 0;
-    const TARGET_GAP_ARCMIN = 50.0;   // exactly your conclusion value
-    const ppi = 380;                  // ← CHANGE THIS to your tablet's real PPI
+    socket.on('command', data => {
+      switch (data.type) {
 
-    function resize() {
-      canvas.width = window.innerWidth * devicePixelRatio;
-      canvas.height = window.innerHeight * devicePixelRatio;
-      canvas.style.width = window.innerWidth + 'px';
-      canvas.style.height = window.innerHeight + 'px';
-      draw();
-    }
+        case 'show':
+          S.visible          = true;
+          S.distM            = data.distM            ?? S.distM;
+          S.angSizeDeg       = data.angSizeDeg       ?? S.angSizeDeg;
+          S.orientation      = data.orientation      ?? 0;
+          S.negativeContrast = data.negativeContrast ?? false;
+          render();
+          break;
 
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const cx = canvas.width / 2, cy = canvas.height / 2;
+        case 'rotate':
+          // Orientation-only update — only changes the SVG transform, instant
+          S.orientation = data.orientation;
+          if (S.visible)
+            lc.setAttribute('transform',
+              `translate(100 100) rotate(${S.orientation})`);
+          break;
 
-      const gapRad = (TARGET_GAP_ARCMIN / 60) * (Math.PI / 180);
-      const gapPhysicalM = 2 * currentDistM * Math.tan(gapRad / 2);
-      const gapPx = gapPhysicalM * ppi * 39.3701;
+        case 'blank':
+          S.visible = false;
+          render();
+          break;
 
-      const outerDiameterPx = gapPx * 5;
-      const strokePx = outerDiameterPx / 5;
-      const radiusOuter = outerDiameterPx / 2;
-      const radiusInner = radiusOuter - strokePx;
-
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(orientation * Math.PI / 180);
-      ctx.globalAlpha = contrast;
-
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(0, 0, radiusOuter, 0, Math.PI * 2);
-      ctx.arc(0, 0, radiusInner, Math.PI * 2, 0, true);
-      ctx.fill('evenodd');
-
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.fillStyle = '#000';
-      ctx.fillRect(radiusInner - 1, -strokePx/2, strokePx + 2, strokePx);
-
-      ctx.restore();
-    }
-
-    window.addEventListener('resize', resize);
-    resize();
-
-    socket.on('control', data => {
-      if (data.dist !== undefined) currentDistM = data.dist;
-      if (data.contrast !== undefined) { contrast = data.contrast; draw(); }
-
-      if (data.start) {
-        currentDistM = data.dist || 1.30;
-        orientation = Math.floor(Math.random() * 4) * 90;
-        contrast = 1.0;
-        draw();
-
-        setTimeout(() => { contrast = 0.25; draw(); }, data.changeSec || 1000);
+        case 'config':
+          if (data.distM      !== undefined) S.distM      = data.distM;
+          if (data.angSizeDeg !== undefined) S.angSizeDeg = data.angSizeDeg;
+          if (S.visible) render();
+          break;
       }
     });
   </script>

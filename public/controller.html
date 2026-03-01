@@ -1,65 +1,1100 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Landolt C Controller</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Landolt C — Controller</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#111; color:#eee; margin:0; padding:20px; text-align:center; }
-    h2 { margin:20px 0 10px; }
-    button { font-size:22px; padding:15px 30px; margin:10px; border-radius:12px; border:none; cursor:pointer; width:80%; max-width:320px; }
-    .contrast-btn { background:#444; color:white; }
-    .plane-btn { background:#2a6; color:white; }
-    .plane-btn.selected { background:#0a5; box-shadow:0 0 15px #0f0; }
-    input { font-size:24px; width:120px; text-align:center; padding:8px; margin:5px; }
-    #start { background:#0a5; font-size:28px; padding:20px; margin:30px auto; display:block; width:70%; }
+    @font-face {
+      font-family: 'OpticianSans';
+      src: url('/fonts/Optician-Sans.otf') format('opentype');
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       THEME TOKENS
+       Day  = white clinical environment (matches display screen)
+       Night = dark reduced-glare for dim rooms
+    ══════════════════════════════════════════════════════════ */
+    :root {
+      --mono: 'OpticianSans', 'Courier New', monospace;
+      --sans: 'OpticianSans', system-ui, sans-serif;
+      --radius: 10px;
+      --green: #1db954;
+      --red:   #e85555;
+    }
+
+    /* DARK (default) */
+    [data-theme="dark"] {
+      --bg:        #0a0a0e;
+      --surface:   #111118;
+      --surface2:  #16161f;
+      --border:    #1f1f2e;
+      --muted:     #28283c;
+      --text:      #d0d0e8;
+      --dim:       #484868;
+      --accent:    #c8dcff;
+      --accent-bg: rgba(200,220,255,0.07);
+      --thumb:     #c8dcff;
+      --show-bg:   #c8dcff;
+      --show-fg:   #000;
+      --tog-on:    rgba(29,185,84,0.3);
+      --tog-thumb: #1db954;
+    }
+
+    /* LIGHT */
+    [data-theme="light"] {
+      --bg:        #f4f4f6;
+      --surface:   #ffffff;
+      --surface2:  #ebebef;
+      --border:    #d8d8e2;
+      --muted:     #d0d0de;
+      --text:      #1a1a2e;
+      --dim:       #888899;
+      --accent:    #1a56cc;
+      --accent-bg: rgba(26,86,204,0.07);
+      --thumb:     #1a56cc;
+      --show-bg:   #1a1a2e;
+      --show-fg:   #ffffff;
+      --tog-on:    rgba(29,185,84,0.25);
+      --tog-thumb: #1db954;
+    }
+
+    /* System default — apply on first load before JS runs */
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme]) { color-scheme: light; }
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       BASE
+    ══════════════════════════════════════════════════════════ */
+    *, *::before, *::after {
+      margin: 0; padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       LAYOUT  — desktop: sidebar + main
+                 mobile:  single scrollable column
+    ══════════════════════════════════════════════════════════ */
+    body {
+      display: grid;
+      grid-template-rows: 50px 1fr;
+      grid-template-columns: 272px 1fr;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    @media (max-width: 700px) {
+      body {
+        grid-template-columns: 1fr;
+        grid-template-rows: 50px 1fr;
+        overflow: hidden;
+      }
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      z-index: 10;
+    }
+
+    .logo {
+      font-family: var(--mono);
+      font-size: 14px;
+      letter-spacing: 0.14em;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+    .logo em { color: var(--dim); font-style: normal; }
+
+    /* Theme toggle button */
+    .theme-btn {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .theme-btn:hover { border-color: var(--accent); }
+
+    /* Connection pill */
+    .conn-pill {
+      display: flex; align-items: center; gap: 6px;
+      margin-left: auto;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--dim);
+      letter-spacing: 0.07em;
+    }
+    .conn-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+      transition: background 0.4s, box-shadow 0.4s;
+      flex-shrink: 0;
+    }
+    .conn-dot.live {
+      background: var(--green);
+      box-shadow: 0 0 7px var(--green);
+    }
+
+    /* Auto-rotate live badge */
+    .rot-badge {
+      display: none;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--green);
+      letter-spacing: 0.07em;
+    }
+    .rot-badge.on { display: flex; }
+    .rot-badge .pulse {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: blink 1.1s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    /* ── Sidebar ─────────────────────────────────────────────── */
+    aside {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 14px 12px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    aside::-webkit-scrollbar { width: 3px; }
+    aside::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+
+    @media (max-width: 700px) {
+      aside {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        overflow-y: visible;
+        /* collapses into top strip on mobile */
+      }
+    }
+
+    /* ── Section label ───────────────────────────────────────── */
+    .sec {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 8px;
+    }
+
+    /* ── Distance cards ──────────────────────────────────────── */
+    .dist-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .dist-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--dim);
+      padding: 10px 6px 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      touch-action: manipulation;
+    }
+    .dist-btn:hover { border-color: var(--muted); color: var(--text); }
+    .dist-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-bg);
+    }
+    .dist-btn .d-cm {
+      font-family: var(--mono);
+      font-size: 17px;
+      display: block;
+      line-height: 1;
+    }
+    .dist-btn .d-mm {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--dim);
+      display: block;
+      margin-top: 3px;
+    }
+    .dist-btn .d-ang {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--dim);
+      display: block;
+      margin-top: 1px;
+    }
+    .dist-btn.active .d-mm,
+    .dist-btn.active .d-ang { color: color-mix(in srgb, var(--accent) 60%, transparent); }
+
+    /* ── Slider field ────────────────────────────────────────── */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--dim);
+    }
+    .field-row .fval { color: var(--text); }
+
+    input[type=range] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%;
+      height: 2px;
+      background: var(--muted);
+      border-radius: 1px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px; height: 15px;
+      border-radius: 50%;
+      background: var(--thumb);
+      cursor: pointer;
+      box-shadow: 0 0 0 3px var(--accent-bg);
+    }
+
+    /* Step buttons row */
+    .step-row { display: flex; gap: 4px; margin-top: 6px; }
+    .step-btn {
+      flex: 1;
+      padding: 6px 2px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: 10px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.12s;
+      touch-action: manipulation;
+    }
+    .step-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .step-btn:active { background: var(--muted); }
+
+    /* ── Info card ───────────────────────────────────────────── */
+    .info-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      margin-top: 8px;
+      font-family: var(--mono);
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--dim);
+      padding: 2px 0;
+    }
+    .info-row .ival { color: var(--text); }
+    .info-row.big .ival { color: var(--accent); font-size: 15px; }
+
+    /* ── Contrast toggle ─────────────────────────────────────── */
+    .ct-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .ct-btn {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 6px;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-align: center;
+      transition: all 0.15s;
+      touch-action: manipulation;
+    }
+    .ct-pos { background: var(--bg); color: var(--dim); }
+    .ct-neg { background: var(--bg); color: var(--dim); }
+    .ct-pos.active { background: #ffffff; color: #000000; border-color: #ccc; }
+    .ct-neg.active { background: #000000; color: #ffffff; border-color: #555; }
+
+    .ct-swatch {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      margin: 0 auto 5px;
+    }
+    .sw-pos { background: #fff; border: 2px solid rgba(128,128,128,0.3); }
+    .sw-neg { background: #000; border: 2px solid rgba(128,128,128,0.3); }
+
+    /* ── iOS toggle ──────────────────────────────────────────── */
+    .tog-row { display: flex; align-items: center; gap: 8px; }
+    .tog-label { font-family: var(--mono); font-size: 11px; color: var(--dim); flex: 1; }
+    .toggle {
+      width: 40px; height: 23px;
+      border-radius: 12px;
+      background: var(--muted);
+      border: none; cursor: pointer;
+      position: relative;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 17px; height: 17px;
+      border-radius: 50%;
+      background: var(--dim);
+      transition: all 0.2s;
+    }
+    .toggle.on { background: var(--tog-on); }
+    .toggle.on::after { left: calc(100% - 20px); background: var(--tog-thumb); }
+
+    /* ══════════════════════════════════════════════════════════
+       MAIN PANEL
+    ══════════════════════════════════════════════════════════ */
+    main {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    /* ── Orientation pad ─────────────────────────────────────── */
+    .orient-panel { padding: 14px 16px 0; }
+    .o-grid {
+      display: inline-grid;
+      grid-template-columns: repeat(3, 58px);
+      grid-template-rows: repeat(3, 58px);
+      gap: 5px;
+    }
+    .o-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--dim);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.12s;
+      touch-action: manipulation;
+      user-select: none;
+    }
+    .o-btn:hover { border-color: var(--muted); color: var(--text); }
+    .o-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+    .o-rand { font-size: 18px; }
+    .o-rand:hover { border-color: var(--green); color: var(--green); }
+    .o-rand.active { border-color: var(--green); color: var(--green); background: rgba(29,185,84,0.08); }
+
+    /* ── Scroll area ─────────────────────────────────────────── */
+    .scroll {
+      overflow-y: auto;
+      padding: 14px 16px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .scroll::-webkit-scrollbar { width: 3px; }
+    .scroll::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+
+    /* Patient row */
+    .pat-row { display: flex; gap: 8px; align-items: flex-end; }
+    .pat-row .field { flex: 1; }
+
+    input[type=text] {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 7px 10px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type=text]:focus { border-color: var(--accent); }
+
+    /* ── Mini button ─────────────────────────────────────────── */
+    .mini-btn {
+      padding: 7px 13px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.12s;
+      touch-action: manipulation;
+    }
+    .mini-btn:hover { background: var(--muted); border-color: var(--accent); }
+
+    /* ── Timer bar ───────────────────────────────────────────── */
+    .timer-wrap {
+      height: 3px; background: var(--muted);
+      border-radius: 2px; overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .timer-bar {
+      height: 100%; background: var(--accent);
+      border-radius: 2px; width: 0%;
+    }
+
+    /* ── Action buttons ──────────────────────────────────────── */
+    .act-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .act-btn {
+      padding: 16px 8px;
+      border: none;
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.12s;
+      touch-action: manipulation;
+    }
+    .btn-show  { background: var(--show-bg); color: var(--show-fg); }
+    .btn-show:hover  { opacity: 0.88; }
+    .btn-blank { background: var(--muted); color: var(--text); }
+    .btn-blank:hover { opacity: 0.8; }
+    .btn-ok   { background: rgba(29,185,84,0.14); border: 1px solid var(--green); color: var(--green); }
+    .btn-ok:hover   { background: rgba(29,185,84,0.25); }
+    .btn-fail { background: rgba(232,85,85,0.12); border: 1px solid var(--red); color: var(--red); }
+    .btn-fail:hover { background: rgba(232,85,85,0.22); }
+
+    /* ── Trial log ───────────────────────────────────────────── */
+    .log-hdr { display: flex; justify-content: space-between; align-items: center; }
+    .log-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
+    thead tr { background: var(--surface2); }
+    th {
+      padding: 7px 9px; text-align: left;
+      color: var(--dim); border-bottom: 1px solid var(--border);
+      font-weight: 400; letter-spacing: 0.07em;
+    }
+    td { padding: 6px 9px; border-bottom: 1px solid var(--border); color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    tr.ok   td.res { color: var(--green); }
+    tr.fail td.res { color: var(--red); }
+    .empty-row td { color: var(--dim); text-align: center; padding: 20px; }
+
+    /* ── Bottom bar ──────────────────────────────────────────── */
+    .btm-bar {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .score-txt { flex: 1; font-family: var(--mono); font-size: 11px; color: var(--dim); }
+    .score-txt strong { color: var(--text); }
+
+    /* ── Toast ───────────────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 72px; left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--accent); color: var(--bg);
+      font-family: var(--mono); font-size: 11px;
+      padding: 8px 18px; border-radius: 20px;
+      pointer-events: none; opacity: 0;
+      transition: all 0.2s; white-space: nowrap; z-index: 300;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Mobile tab strip ────────────────────────────────────── */
+    @media (max-width: 700px) {
+      body {
+        grid-template-columns: 1fr;
+        grid-template-rows: 50px auto 1fr auto;
+      }
+      aside {
+        grid-row: 2;
+        max-height: 42vh;
+        overflow-y: auto;
+        border-bottom: 1px solid var(--border);
+        border-right: none;
+      }
+      main {
+        grid-row: 3;
+        min-height: 0;
+      }
+      .btm-bar { grid-row: 4; }
+    }
   </style>
 </head>
 <body>
-  <h1>Landolt C Test</h1>
 
-  <h2>Choose stimuli contrast:</h2>
-  <button class="contrast-btn" onclick="send({contrast:1.0})">High Contrast (reference)</button>
-  <button class="contrast-btn" onclick="send({contrast:0.25})">Low Contrast (test)</button>
+<!-- ── Header ───────────────────────────────────────────────── -->
+<header>
+  <div class="logo">LANDOLT<em>·</em>C</div>
+  <div class="rot-badge" id="rotBadge"><span class="pulse"></span>AUTO</div>
+  <button class="theme-btn" id="themeBtn" title="Toggle day/night">☀️</button>
+  <div class="conn-pill">
+    <div class="conn-dot" id="connDot"></div>
+    <span id="connLabel">Connecting…</span>
+  </div>
+</header>
 
-  <h2>Define stimuli size [arcmin gap]:</h2>
-  <input type="number" id="size" value="50" step="0.1" min="10" readonly>
+<!-- ── Sidebar ──────────────────────────────────────────────── -->
+<aside>
 
-  <h2>Stimuli change time [sec]:</h2>
-  <input type="number" id="changetime" value="1" step="0.5" min="0.1">
+  <!-- Distance — sizes derived from α=2·arctan(s/2d), target 50 arcmin gap -->
+  <div>
+    <div class="sec">Distance</div>
+    <div class="dist-grid" id="distGrid">
+      <!--
+        Physical diameters from your table:
+        45 cm → 6.55 mm  | α = 2·arctan(6.55/(2×450)) = 0.8340°  = 50.04′
+        58 cm → 8.44 mm  | α = 2·arctan(8.44/(2×580)) = 0.8337°  = 50.02′
+        81 cm → 11.78 mm | α = 2·arctan(11.78/(2×810)) = 0.8332° = 49.99′
+       130 cm → 18.91 mm | α = 2·arctan(18.91/(2×1300))= 0.8334° = 50.01′
+      -->
+      <button class="dist-btn" data-dist="0.45" data-mm="6.55">
+        <span class="d-cm">45 cm</span>
+        <span class="d-mm">⌀ 6.55 mm</span>
+        <span class="d-ang">≈ 50.04′</span>
+      </button>
+      <button class="dist-btn" data-dist="0.58" data-mm="8.44">
+        <span class="d-cm">58 cm</span>
+        <span class="d-mm">⌀ 8.44 mm</span>
+        <span class="d-ang">≈ 50.02′</span>
+      </button>
+      <button class="dist-btn" data-dist="0.81" data-mm="11.78">
+        <span class="d-cm">81 cm</span>
+        <span class="d-mm">⌀ 11.78 mm</span>
+        <span class="d-ang">≈ 49.99′</span>
+      </button>
+      <button class="dist-btn active" data-dist="1.30" data-mm="18.91">
+        <span class="d-cm">130 cm</span>
+        <span class="d-mm">⌀ 18.91 mm</span>
+        <span class="d-ang">≈ 50.01′</span>
+      </button>
+    </div>
+  </div>
 
-  <h2>Choose plane (distance):</h2>
-  <button class="plane-btn" onclick="selectPlane(0.45)">45 cm</button>
-  <button class="plane-btn" onclick="selectPlane(0.58)">58 cm</button>
-  <button class="plane-btn" onclick="selectPlane(0.81)">81 cm</button>
-  <button class="plane-btn" onclick="selectPlane(1.30)">130 cm</button>
+  <!-- Angular size -->
+  <div>
+    <div class="sec">Angular Size (full diameter)</div>
+    <div class="field">
+      <div class="field-row">
+        <span>Degrees</span>
+        <span class="fval" id="angVal">0.833°</span>
+      </div>
+      <input type="range" id="angSlider" min="0.2" max="3.0" step="0.001" value="0.833">
+    </div>
+    <div class="step-row">
+      <button class="step-btn" data-adelta="-0.1">−0.1°</button>
+      <button class="step-btn" data-adelta="-0.05">−.05</button>
+      <button class="step-btn" data-adelta="+0.05">+.05</button>
+      <button class="step-btn" data-adelta="+0.1">+0.1°</button>
+    </div>
+    <div class="info-card">
+      <div class="info-row"><span>Gap (arcmin)</span><span class="ival" id="iGap">—</span></div>
+      <div class="info-row"><span>Phys. diameter</span><span class="ival" id="iMm">—</span></div>
+      <div class="info-row big"><span>Snellen</span><span class="ival" id="iSnellen">—</span></div>
+      <div class="info-row"><span>logMAR</span><span class="ival" id="iLogmar">—</span></div>
+    </div>
+  </div>
 
-  <button id="start" onclick="startTest()">START</button>
+  <!-- Contrast mode -->
+  <div>
+    <div class="sec">Contrast Mode</div>
+    <div class="ct-row">
+      <button class="ct-btn ct-pos active" id="ctPos">
+        <div class="ct-swatch sw-pos"></div>
+        White on Black
+      </button>
+      <button class="ct-btn ct-neg" id="ctNeg">
+        <div class="ct-swatch sw-neg"></div>
+        Black on White
+      </button>
+    </div>
+  </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    let selectedDist = 1.30;
+  <!-- Auto-rotate -->
+  <div>
+    <div class="sec">Auto-Rotate</div>
+    <div class="tog-row">
+      <span class="tog-label">Enabled</span>
+      <button class="toggle on" id="autorotToggle"></button>
+    </div>
+    <div class="field" style="margin-top:10px">
+      <div class="field-row">
+        <span>Interval</span>
+        <span class="fval" id="intervalVal">2.0 s</span>
+      </div>
+      <input type="range" id="intervalSlider" min="0.5" max="10" step="0.5" value="2">
+    </div>
+  </div>
 
-    function send(data) { socket.emit('control', data); }
+</aside>
 
-    function selectPlane(dist) {
-      selectedDist = dist;
-      document.querySelectorAll('.plane-btn').forEach(b => b.classList.remove('selected'));
-      event.target.classList.add('selected');
-      send({dist: dist});
+<!-- ── Main panel ────────────────────────────────────────────── -->
+<main>
+
+  <!-- Orientation pad -->
+  <div class="orient-panel">
+    <div class="sec">Orientation</div>
+    <div class="o-grid">
+      <div></div>
+      <button class="o-btn" data-deg="270">↑</button>
+      <div></div>
+      <button class="o-btn" data-deg="180">←</button>
+      <button class="o-btn o-rand active" id="oRandBtn">↺</button>
+      <button class="o-btn" data-deg="0">→</button>
+      <div></div>
+      <button class="o-btn" data-deg="90">↓</button>
+      <div></div>
+    </div>
+  </div>
+
+  <!-- Scrollable content -->
+  <div class="scroll">
+
+    <!-- Patient -->
+    <div>
+      <div class="sec">Patient / Session</div>
+      <div class="pat-row">
+        <div class="field">
+          <div class="field-row"><span>Name / ID</span></div>
+          <input type="text" id="patientInput" placeholder="e.g. P-042, Left Eye">
+        </div>
+        <button class="mini-btn" id="newSessBtn">New</button>
+        <button class="mini-btn" id="saveBtn">Save ↓</button>
+      </div>
+    </div>
+
+    <!-- Trial controls -->
+    <div>
+      <div class="sec">Trial</div>
+      <div class="timer-wrap"><div class="timer-bar" id="timerBar"></div></div>
+      <div class="act-grid">
+        <button class="act-btn btn-blank" id="blankBtn">⬛ Blank</button>
+        <button class="act-btn btn-show"  id="showBtn">▶ Show</button>
+        <button class="act-btn btn-fail"  id="failBtn">✗ Wrong</button>
+        <button class="act-btn btn-ok"    id="okBtn">✓ Correct</button>
+      </div>
+    </div>
+
+    <!-- Trial log -->
+    <div>
+      <div class="log-hdr">
+        <div class="sec" style="margin:0">Trial Log</div>
+        <button class="mini-btn" id="clearLogBtn" style="font-size:9px;padding:4px 8px">Clear</button>
+      </div>
+      <div class="log-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Dist</th><th>Ang°</th><th>Gap′</th>
+              <th>Dir</th><th>CT</th><th>Result</th>
+            </tr>
+          </thead>
+          <tbody id="logBody">
+            <tr class="empty-row"><td colspan="7">No trials yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /scroll -->
+
+  <!-- Bottom bar -->
+  <div class="btm-bar">
+    <div class="score-txt" id="scoreTxt">Start a session above</div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCRIPT
+══════════════════════════════════════════════════════════ -->
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  // ── Theme ─────────────────────────────────────────────────
+  // Default: respect OS preference; user can override
+  const htmlEl = document.documentElement;
+
+  function getOSTheme() {
+    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+
+  let currentTheme = localStorage.getItem('lcTheme') || getOSTheme();
+  applyTheme(currentTheme);
+
+  function applyTheme(t) {
+    currentTheme = t;
+    htmlEl.setAttribute('data-theme', t);
+    document.getElementById('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
+    localStorage.setItem('lcTheme', t);
+  }
+
+  document.getElementById('themeBtn').addEventListener('click', () => {
+    applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+  });
+
+  // Also auto-switch if OS preference changes (e.g. system auto dark/light)
+  window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
+    if (!localStorage.getItem('lcTheme')) applyTheme(e.matches ? 'light' : 'dark');
+  });
+
+  // ── State ─────────────────────────────────────────────────
+  let P = {
+    distM:            1.30,
+    angSizeDeg:       0.833,
+    negativeContrast: false,
+    randomOrient:     true,
+    orientDeg:        0,
+    autoRotate:       true,
+    intervalSec:      2.0,
+  };
+
+  let session    = { patient: '', trials: [], startTime: null };
+  let trialActive = false;
+  let currentOrient = 0;
+  let autoRotTimer  = null;
+  let rafHandle     = null;
+  let trialStart    = 0;
+
+  // ── Socket ────────────────────────────────────────────────
+  const socket = io();
+  socket.emit('register', 'controller');
+
+  const connDot   = document.getElementById('connDot');
+  const connLabel = document.getElementById('connLabel');
+
+  socket.on('status', d => {
+    const n = d.displays || 0;
+    connDot.className = 'conn-dot' + (n > 0 ? ' live' : '');
+    connLabel.textContent = n === 0 ? 'No display' : `${n} display${n > 1 ? 's' : ''} live`;
+  });
+  socket.on('disconnect', () => {
+    connDot.className = 'conn-dot';
+    connLabel.textContent = 'Disconnected';
+  });
+
+  function cmd(obj) { socket.emit('command', obj); }
+
+  // ── Distance buttons ──────────────────────────────────────
+  document.querySelectorAll('.dist-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.dist-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      P.distM = +btn.dataset.dist;
+      // Update angSizeDeg to match exact physical size for this distance
+      const mm = +btn.dataset.mm;
+      P.angSizeDeg = calcAngDeg(P.distM, mm / 1000);
+      syncAngSlider();
+      updateInfo();
+      cmd({ type: 'config', distM: P.distM, angSizeDeg: P.angSizeDeg });
+    });
+  });
+
+  // α = 2 · arctan(physM / (2 × distM))  — exact formula from your reference
+  function calcAngDeg(distM, physM) {
+    return 2 * Math.atan(physM / (2 * distM)) * (180 / Math.PI);
+  }
+
+  // ── Angular size slider + steps ───────────────────────────
+  const angSlider = document.getElementById('angSlider');
+
+  angSlider.addEventListener('input', () => {
+    P.angSizeDeg = +angSlider.value;
+    document.getElementById('angVal').textContent = P.angSizeDeg.toFixed(3) + '°';
+    updateInfo();
+    cmd({ type: 'config', angSizeDeg: P.angSizeDeg });
+  });
+
+  document.querySelectorAll('.step-btn[data-adelta]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      P.angSizeDeg = Math.max(0.2, Math.min(3.0,
+        Math.round((P.angSizeDeg + +btn.dataset.adelta) * 1000) / 1000
+      ));
+      syncAngSlider();
+      updateInfo();
+      cmd({ type: 'config', angSizeDeg: P.angSizeDeg });
+    });
+  });
+
+  function syncAngSlider() {
+    angSlider.value = P.angSizeDeg;
+    document.getElementById('angVal').textContent = P.angSizeDeg.toFixed(3) + '°';
+  }
+
+  function updateInfo() {
+    const gapDeg    = P.angSizeDeg / 5;
+    const gapArcmin = gapDeg * 60;
+    const angRad    = P.angSizeDeg * Math.PI / 180;
+    const physMm    = 2 * P.distM * Math.tan(angRad / 2) * 1000;
+    const snellenD  = Math.round(6 * gapArcmin);
+    const logmar    = Math.log10(gapArcmin);
+
+    document.getElementById('iGap').textContent     = gapArcmin.toFixed(2) + '′';
+    document.getElementById('iMm').textContent      = physMm.toFixed(2) + ' mm';
+    document.getElementById('iSnellen').textContent = `6/${snellenD}`;
+    document.getElementById('iLogmar').textContent  = (logmar >= 0 ? '+' : '') + logmar.toFixed(2);
+  }
+  updateInfo();
+
+  // ── Contrast ──────────────────────────────────────────────
+  document.getElementById('ctPos').addEventListener('click', () => {
+    P.negativeContrast = false;
+    document.getElementById('ctPos').classList.add('active');
+    document.getElementById('ctNeg').classList.remove('active');
+  });
+  document.getElementById('ctNeg').addEventListener('click', () => {
+    P.negativeContrast = true;
+    document.getElementById('ctNeg').classList.add('active');
+    document.getElementById('ctPos').classList.remove('active');
+  });
+
+  // ── Orientation pad ───────────────────────────────────────
+  const oBtns    = document.querySelectorAll('.o-btn[data-deg]');
+  const oRandBtn = document.getElementById('oRandBtn');
+
+  oBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      P.randomOrient = false;
+      oBtns.forEach(b => b.classList.remove('active'));
+      oRandBtn.classList.remove('active');
+      btn.classList.add('active');
+      P.orientDeg = +btn.dataset.deg;
+    });
+  });
+  oRandBtn.addEventListener('click', () => {
+    P.randomOrient = true;
+    oBtns.forEach(b => b.classList.remove('active'));
+    oRandBtn.classList.add('active');
+  });
+
+  function pickOrient() {
+    return P.randomOrient
+      ? [0, 90, 180, 270][Math.floor(Math.random() * 4)]
+      : P.orientDeg;
+  }
+
+  // ── Auto-rotate ───────────────────────────────────────────
+  const rotBadge      = document.getElementById('rotBadge');
+  const autorotToggle = document.getElementById('autorotToggle');
+  const intervalSlider= document.getElementById('intervalSlider');
+
+  autorotToggle.addEventListener('click', () => {
+    P.autoRotate = !P.autoRotate;
+    autorotToggle.className = 'toggle' + (P.autoRotate ? ' on' : '');
+    if (!P.autoRotate) stopAutoRot();
+    else if (trialActive) startAutoRot();
+  });
+
+  intervalSlider.addEventListener('input', () => {
+    P.intervalSec = +intervalSlider.value;
+    document.getElementById('intervalVal').textContent = P.intervalSec.toFixed(1) + ' s';
+    if (trialActive && P.autoRotate) { stopAutoRot(); startAutoRot(); }
+  });
+
+  function startAutoRot() {
+    stopAutoRot();
+    if (!P.autoRotate) return;
+    rotBadge.classList.add('on');
+    autoRotTimer = setInterval(() => {
+      currentOrient = pickOrient();
+      cmd({ type: 'rotate', orientation: currentOrient });
+      animateTimerBar();
+    }, P.intervalSec * 1000);
+    animateTimerBar();
+  }
+
+  function stopAutoRot() {
+    clearInterval(autoRotTimer);
+    autoRotTimer = null;
+    rotBadge.classList.remove('on');
+    cancelAnimationFrame(rafHandle);
+    document.getElementById('timerBar').style.width = '0%';
+  }
+
+  function animateTimerBar() {
+    const bar   = document.getElementById('timerBar');
+    const total = P.intervalSec * 1000;
+    const t0    = performance.now();
+    cancelAnimationFrame(rafHandle);
+    const tick = (now) => {
+      const pct = Math.min(100, (now - t0) / total * 100);
+      bar.style.width = pct + '%';
+      if (pct < 100) rafHandle = requestAnimationFrame(tick);
+    };
+    rafHandle = requestAnimationFrame(tick);
+  }
+
+  // ── Show / Blank ──────────────────────────────────────────
+  document.getElementById('blankBtn').addEventListener('click', () => {
+    trialActive = false;
+    stopAutoRot();
+    cmd({ type: 'blank' });
+  });
+
+  document.getElementById('showBtn').addEventListener('click', () => {
+    currentOrient = pickOrient();
+    trialActive   = true;
+    trialStart    = Date.now();
+    cmd({
+      type:             'show',
+      distM:            P.distM,
+      angSizeDeg:       P.angSizeDeg,
+      orientation:      currentOrient,
+      negativeContrast: P.negativeContrast,
+    });
+    if (P.autoRotate) startAutoRot();
+  });
+
+  // ── Record result ─────────────────────────────────────────
+  function recordResult(correct) {
+    if (!trialActive) { showToast('No active trial'); return; }
+    trialActive = false;
+    stopAutoRot();
+    const gapArcmin = (P.angSizeDeg / 5) * 60;
+    const trial = {
+      n:          session.trials.length + 1,
+      distM:      P.distM,
+      angSizeDeg: P.angSizeDeg,
+      gapArcmin,
+      orient:     currentOrient,
+      negative:   P.negativeContrast,
+      correct,
+      rt:         Date.now() - trialStart,
+      timestamp:  Date.now(),
+    };
+    session.trials.push(trial);
+    prependRow(trial);
+    updateScore();
+    cmd({ type: 'blank' });
+  }
+  document.getElementById('okBtn').addEventListener('click',   () => recordResult(true));
+  document.getElementById('failBtn').addEventListener('click', () => recordResult(false));
+
+  // ── Log table ─────────────────────────────────────────────
+  const ARROW = { 0:'→', 90:'↓', 180:'←', 270:'↑' };
+
+  function prependRow(t) {
+    const tbody = document.getElementById('logBody');
+    const ph    = tbody.querySelector('.empty-row');
+    if (ph) ph.remove();
+    const tr = document.createElement('tr');
+    tr.className = t.correct ? 'ok' : 'fail';
+    tr.innerHTML = `
+      <td>${t.n}</td>
+      <td>${Math.round(t.distM * 100)} cm</td>
+      <td>${t.angSizeDeg.toFixed(3)}°</td>
+      <td>${t.gapArcmin.toFixed(2)}′</td>
+      <td>${ARROW[t.orient] ?? t.orient + '°'}</td>
+      <td>${t.negative ? 'Neg' : 'Pos'}</td>
+      <td class="res">${t.correct ? '✓' : '✗'}</td>
+    `;
+    tbody.insertBefore(tr, tbody.firstChild);
+  }
+
+  document.getElementById('clearLogBtn').addEventListener('click', () => {
+    session.trials = [];
+    trialActive    = false;
+    stopAutoRot();
+    document.getElementById('logBody').innerHTML =
+      `<tr class="empty-row"><td colspan="7">No trials yet</td></tr>`;
+    updateScore();
+  });
+
+  function updateScore() {
+    const t = session.trials;
+    if (!t.length) { document.getElementById('scoreTxt').textContent = 'No trials yet'; return; }
+    const ok  = t.filter(x => x.correct).length;
+    const pct = Math.round(ok / t.length * 100);
+    document.getElementById('scoreTxt').innerHTML =
+      `<strong>${ok}/${t.length}</strong> correct &nbsp;·&nbsp; <strong>${pct}%</strong> &nbsp;·&nbsp; last: ${t[t.length-1].gapArcmin.toFixed(2)}′`;
+  }
+
+  // ── Session ───────────────────────────────────────────────
+  document.getElementById('newSessBtn').addEventListener('click', () => {
+    if (session.trials.length && !confirm('Clear current session?')) return;
+    session = { patient: document.getElementById('patientInput').value, trials: [], startTime: Date.now() };
+    document.getElementById('logBody').innerHTML =
+      `<tr class="empty-row"><td colspan="7">No trials yet</td></tr>`;
+    updateScore();
+    showToast('New session started');
+  });
+
+  document.getElementById('saveBtn').addEventListener('click', async () => {
+    if (!session.trials.length) { showToast('No trials to save'); return; }
+    const payload = {
+      patient:   document.getElementById('patientInput').value || 'Unknown',
+      trials:    session.trials,
+      timestamp: Date.now(),
+    };
+    try {
+      const r = await fetch('/api/save-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const d = await r.json();
+      showToast(`Saved: ${d.filename}`);
+    } catch { showToast('Save failed'); }
+  });
+
+  // ── Toast ─────────────────────────────────────────────────
+  let toastT = null;
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(() => el.classList.remove('show'), 2200);
+  }
+
+  // ── Keyboard shortcuts ────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === ' ')            { e.preventDefault(); document.getElementById('showBtn').click(); }
+    else if (e.key === 'b')       document.getElementById('blankBtn').click();
+    else if (e.key === 'c')       document.getElementById('okBtn').click();
+    else if (e.key === 'x')       document.getElementById('failBtn').click();
+    else if (e.key === 'd')       document.getElementById('themeBtn').click();
+    else if (e.key === 'ArrowUp') {
+      P.angSizeDeg = Math.min(3.0, Math.round((P.angSizeDeg + 0.05) * 1000) / 1000);
+      syncAngSlider(); updateInfo();
+    } else if (e.key === 'ArrowDown') {
+      P.angSizeDeg = Math.max(0.2, Math.round((P.angSizeDeg - 0.05) * 1000) / 1000);
+      syncAngSlider(); updateInfo();
     }
-
-    function startTest() {
-      const changeSec = parseFloat(document.getElementById('changetime').value) * 1000 || 1000;
-      send({ start: true, changeSec: changeSec, dist: selectedDist });
-    }
-
-    // Highlight default 130 cm
-    setTimeout(() => {
-      const btn = Array.from(document.querySelectorAll('.plane-btn')).find(b => b.textContent.includes('130'));
-      if (btn) btn.classList.add('selected');
-    }, 300);
-  </script>
+  });
+</script>
 </body>
 </html>

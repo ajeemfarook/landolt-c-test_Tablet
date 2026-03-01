@@ -1,0 +1,39 @@
+{
+  "patient": "P-001",
+  "trials": [
+    {
+      "n": 1,
+      "distM": 1.3,
+      "angSizeDeg": 0.8334185284465934,
+      "gapArcmin": 10.001022341359121,
+      "orient": 0,
+      "negative": true,
+      "correct": true,
+      "rt": 103513,
+      "timestamp": 1772364740030
+    },
+    {
+      "n": 2,
+      "distM": 1.3,
+      "angSizeDeg": 0.8334185284465934,
+      "gapArcmin": 10.001022341359121,
+      "orient": 180,
+      "negative": true,
+      "correct": true,
+      "rt": 1454,
+      "timestamp": 1772364768461
+    },
+    {
+      "n": 3,
+      "distM": 0.45,
+      "angSizeDeg": 0.8339571782037943,
+      "gapArcmin": 10.007486138445532,
+      "orient": 90,
+      "negative": true,
+      "correct": true,
+      "rt": 765,
+      "timestamp": 1772364774492
+    }
+  ],
+  "timestamp": 1772365207985
+}
