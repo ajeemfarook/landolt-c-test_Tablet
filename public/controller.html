@@ -383,8 +383,77 @@
       background: var(--bg);
     }
 
-    /* ── Orientation pad ─────────────────────────────────────── */
-    .orient-panel { padding: 14px 16px 0; }
+    /* ── Orientation + preview row ───────────────────────────── */
+    .orient-panel {
+      padding: 14px 16px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .orient-left { flex-shrink: 0; }
+
+    /* ── Inline preview (next to orientation pad) ────────────── */
+    .inline-preview {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .inline-preview-box {
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #111;
+      aspect-ratio: 4 / 3;
+      min-height: 184px;
+      max-height: 340px;
+      transition: background 0.15s;
+    }
+    .inline-preview-box.neg   { background: #f0f0f0; }
+    .inline-preview-box.blank .ipv-c { opacity: 0; }
+
+    .ipv-c {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s;
+    }
+    .ipv-c svg {
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .ipv-label {
+      position: absolute;
+      bottom: 5px; left: 0; right: 0;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+      pointer-events: none;
+    }
+    .inline-preview-box.neg .ipv-label { color: rgba(0,0,0,0.18); }
+
+    .ipv-badge {
+      position: absolute;
+      top: 5px; right: 7px;
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+    }
+
     .o-grid {
       display: inline-grid;
       grid-template-columns: repeat(3, 58px);
@@ -550,6 +619,276 @@
       }
       .btm-bar { grid-row: 4; }
     }
+
+    /* ══════════════════════════════════════════════════════════
+       SLIDER SERIAL PANEL
+    ══════════════════════════════════════════════════════════ */
+    .slider-panel {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .slider-hdr {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .slider-hdr-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--dim);
+      flex: 1;
+    }
+    .serial-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+      flex-shrink: 0;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    .serial-dot.on {
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+    }
+
+    .serial-btn {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .serial-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .serial-btn.connected { border-color: var(--red); color: var(--red); }
+
+    .slider-body { padding: 10px 10px 12px; }
+
+    /* Rail */
+    .s-rail-wrap { margin-bottom: 10px; }
+    .s-rail-track {
+      height: 6px;
+      background: var(--muted);
+      border-radius: 3px;
+      position: relative;
+      overflow: visible;
+      margin-bottom: 4px;
+    }
+    .s-rail-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 60%, transparent) 100%);
+      transition: width 0.12s ease;
+      min-width: 0;
+    }
+    .s-rail-thumb {
+      position: absolute;
+      top: -5px;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 60%, transparent);
+      transform: translateX(-50%);
+      transition: left 0.12s ease;
+      pointer-events: none;
+    }
+    .s-rail-tick {
+      position: absolute;
+      top: -3px;
+      width: 2px; height: 12px;
+      background: var(--dim);
+      transform: translateX(-50%);
+      pointer-events: none;
+      border-radius: 1px;
+      opacity: 0.5;
+    }
+    .s-rail-labels {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--dim);
+    }
+    .s-raw-line {
+      font-family: var(--mono);
+      font-size: 8px;
+      color: var(--dim);
+      margin-top: 3px;
+      min-height: 10px;
+      word-break: break-all;
+      opacity: 0.7;
+    }
+
+    /* Preset move buttons */
+    .s-preset-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .s-preset-btn {
+      font-family: var(--mono);
+      font-size: 9px;
+      padding: 7px 2px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--dim);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.12s;
+      touch-action: manipulation;
+    }
+    .s-preset-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+    .s-preset-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+    .s-preset-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* Position readout */
+    .s-pos-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+    .s-pos-val {
+      font-family: var(--mono);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .s-pos-unit { font-family: var(--mono); font-size: 11px; color: var(--dim); }
+
+    /* Slider jog controls — now four columns */
+    .s-jog-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .s-jog-btn {
+      font-family: var(--mono);
+      font-size: 9px;
+      padding: 6px 4px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--dim);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.12s;
+      touch-action: manipulation;
+    }
+    .s-jog-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+    .s-jog-btn.home-jog:hover:not(:disabled) { border-color: var(--green); color: var(--green); }
+    .s-jog-btn.estop-btn {
+      border-color: var(--red);
+      color: var(--red);
+    }
+    .s-jog-btn.estop-btn:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--red) 15%, transparent);
+    }
+    .s-jog-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* Manual goto row */
+    .s-goto-row {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+    .s-goto-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 6px 8px;
+      outline: none;
+      min-width: 0;
+      transition: border-color 0.15s;
+      appearance: textfield;
+      -moz-appearance: textfield;
+    }
+    .s-goto-input::-webkit-outer-spin-button,
+    .s-goto-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .s-goto-input:focus:not(:disabled) { border-color: var(--accent); }
+    .s-goto-input:disabled { opacity: 0.3; cursor: not-allowed; }
+    .s-goto-input::placeholder { color: var(--dim); }
+    .s-goto-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      padding: 6px 12px;
+      border-radius: 5px;
+      border: 1px solid var(--accent);
+      background: transparent;
+      color: var(--accent);
+      cursor: pointer;
+      transition: all 0.12s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .s-goto-btn:hover:not(:disabled) { background: var(--accent-bg); }
+    .s-goto-btn:disabled { opacity: 0.3; cursor: not-allowed; border-color: var(--border); color: var(--dim); }
+
+    /* Auto-link toggle */
+    .s-link-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      margin-top: 6px;
+    }
+    .s-link-label { font-family: var(--mono); font-size: 9px; color: var(--dim); flex: 1; letter-spacing: 0.07em; }
+    .toggle-sm {
+      width: 32px; height: 18px;
+      border-radius: 9px;
+      background: var(--muted);
+      border: none; cursor: pointer;
+      position: relative; transition: background 0.2s; flex-shrink: 0;
+    }
+    .toggle-sm::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 14px; height: 14px;
+      border-radius: 50%; background: var(--dim);
+      transition: all 0.2s;
+    }
+    .toggle-sm.on { background: var(--tog-on); }
+    .toggle-sm.on::after { left: calc(100% - 16px); background: var(--tog-thumb); }
+
+    /* No Web Serial warning */
+    .no-serial-warn {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--red);
+      padding: 6px 8px;
+      border: 1px solid color-mix(in srgb, var(--red) 40%, transparent);
+      border-radius: 5px;
+      background: color-mix(in srgb, var(--red) 8%, transparent);
+      line-height: 1.5;
+      margin-top: 6px;
+    }
   </style>
 </head>
 <body>
@@ -657,25 +996,133 @@
     </div>
   </div>
 
+  <!-- ── Tablet Position ──────────────────────────────────── -->
+  <div>
+    <div class="sec">Tablet Position</div>
+    <div class="slider-panel">
+
+      <!-- Header: label + dot + connect -->
+      <div class="slider-hdr">
+        <span class="slider-hdr-label">Arduino Serial</span>
+        <span class="serial-dot" id="serialDot"></span>
+        <button class="serial-btn" id="serialBtn">Connect</button>
+      </div>
+
+      <div class="slider-body">
+
+        <!-- Big live position readout — cm from patient -->
+        <div class="s-pos-row">
+          <span class="s-pos-val" id="sliderPosVal">---</span>
+          <span class="s-pos-unit">cm</span>
+        </div>
+
+        <!-- Rail -->
+        <div class="s-rail-wrap">
+          <div class="s-rail-track">
+            <div class="s-rail-fill"  id="sRailFill"  style="width:0%"></div>
+            <div class="s-rail-thumb" id="sRailThumb" style="left:0%"></div>
+            <!-- ticks at exam distances, measured from patient (right=0cm) -->
+            <div class="s-rail-tick" style="left:3.8%"   title="125 cm"></div>
+            <div class="s-rail-tick" style="left:37.7%"  title="81 cm"></div>
+            <div class="s-rail-tick" style="left:55.4%"  title="58 cm"></div>
+            <div class="s-rail-tick" style="left:65.4%"  title="45 cm"></div>
+            <div class="s-rail-tick" style="left:80.8%"  title="25 cm (jog min)"></div>
+          </div>
+          <div class="s-rail-labels">
+            <span>Home 130</span>
+            <span>81</span>
+            <span>58</span>
+            <span>45</span>
+            <span>25</span>
+            <span>0 cm</span>
+          </div>
+          <!-- live raw serial debug -->
+          <div id="sRawLine" class="s-raw-line"></div>
+        </div>
+
+        <!-- Preset move buttons — clicking sends GOTO to Arduino -->
+        <div class="sec" style="margin-top:8px">Move to preset</div>
+        <div class="s-preset-row">
+          <button class="s-preset-btn" id="sPreset45"  data-cm="45"  disabled>45 cm</button>
+          <button class="s-preset-btn" id="sPreset58"  data-cm="58"  disabled>58 cm</button>
+          <button class="s-preset-btn" id="sPreset81"  data-cm="81"  disabled>81 cm</button>
+          <button class="s-preset-btn" id="sPreset130" data-cm="130" disabled>130 cm</button>
+        </div>
+
+        <!-- Manual cm input — always shows current position, editable to send GOTO -->
+        <div class="sec" style="margin-top:8px">Manual position</div>
+        <div class="s-goto-row">
+          <input type="number" class="s-goto-input" id="sGotoInput"
+            min="0" max="130" step="0.1" placeholder="cm…" disabled>
+          <button class="s-goto-btn" id="sBtnGoto" disabled>Go</button>
+        </div>
+
+        <!-- Jog + Home + STOP (now 4 buttons) -->
+        <div class="s-jog-row" style="margin-top:8px">
+          <button class="s-jog-btn" id="sBtnFwd"  disabled>← Closer</button>
+          <button class="s-jog-btn home-jog" id="sBtnHome" disabled>⌂ Home</button>
+          <button class="s-jog-btn estop-btn" id="sBtnEstop" disabled>⛔ STOP</button>
+          <button class="s-jog-btn" id="sBtnBwd"  disabled>Farther →</button>
+        </div>
+
+        <!-- Auto-link toggle -->
+        <div class="s-link-row">
+          <span class="s-link-label">Auto-select distance on move</span>
+          <button class="toggle-sm on" id="sliderLinkToggle"></button>
+        </div>
+
+        <!-- No Web Serial notice -->
+        <div class="no-serial-warn" id="noSerialWarn" style="display:none">
+          ⚠ Web Serial requires Chrome or Edge (desktop).
+        </div>
+
+      </div>
+    </div>
+  </div>
+
 </aside>
 
 <!-- ── Main panel ────────────────────────────────────────────── -->
 <main>
 
-  <!-- Orientation pad -->
+  <!-- Orientation pad + inline preview -->
   <div class="orient-panel">
-    <div class="sec">Orientation</div>
-    <div class="o-grid">
-      <div></div>
-      <button class="o-btn" data-deg="270">↑</button>
-      <div></div>
-      <button class="o-btn" data-deg="180">←</button>
-      <button class="o-btn o-rand active" id="oRandBtn">↺</button>
-      <button class="o-btn" data-deg="0">→</button>
-      <div></div>
-      <button class="o-btn" data-deg="90">↓</button>
-      <div></div>
+
+    <!-- Left: orientation grid -->
+    <div class="orient-left">
+      <div class="sec">Orientation</div>
+      <div class="o-grid">
+        <div></div>
+        <button class="o-btn" data-deg="270">↑</button>
+        <div></div>
+        <button class="o-btn" data-deg="180">←</button>
+        <button class="o-btn o-rand active" id="oRandBtn">↺</button>
+        <button class="o-btn" data-deg="0">→</button>
+        <div></div>
+        <button class="o-btn" data-deg="90">↓</button>
+        <div></div>
+      </div>
     </div>
+
+    <!-- Right: live mini preview -->
+    <div class="inline-preview">
+      <div class="sec">Live Preview</div>
+      <div class="inline-preview-box" id="previewBox">
+        <div class="ipv-c" id="previewC">
+          <svg id="previewSvg" viewBox="0 0 200 200"
+               xmlns="http://www.w3.org/2000/svg"
+               shape-rendering="geometricPrecision">
+            <path id="previewPath"
+              d="M 97.9796,20 A 100,100 0 1,1 97.9796,-20 L 56.5685,-20 A 60,60 0 1,0 56.5685,20 Z"
+              transform="translate(100 100)"
+              fill="#ffffff"/>
+          </svg>
+        </div>
+        <div class="ipv-label">Display</div>
+        <div class="ipv-badge" id="previewBadge">BLANK</div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Scrollable content -->
@@ -743,16 +1190,12 @@
 ══════════════════════════════════════════════════════════ -->
 <script src="/socket.io/socket.io.js"></script>
 <script>
-  // ── Theme ─────────────────────────────────────────────────
-  // Default: respect OS preference; user can override
+  // ══════════════════════════════════════════════════════════
+  // THEME
+  // ══════════════════════════════════════════════════════════
   const htmlEl = document.documentElement;
-
-  function getOSTheme() {
-    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-  }
-
-  let currentTheme = localStorage.getItem('lcTheme') || getOSTheme();
-  applyTheme(currentTheme);
+  let currentTheme = localStorage.getItem('lcTheme') ||
+    (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
 
   function applyTheme(t) {
     currentTheme = t;
@@ -760,17 +1203,18 @@
     document.getElementById('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
     localStorage.setItem('lcTheme', t);
   }
+  applyTheme(currentTheme);
 
   document.getElementById('themeBtn').addEventListener('click', () => {
     applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
   });
-
-  // Also auto-switch if OS preference changes (e.g. system auto dark/light)
   window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
     if (!localStorage.getItem('lcTheme')) applyTheme(e.matches ? 'light' : 'dark');
   });
 
-  // ── State ─────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // STATE
+  // ══════════════════════════════════════════════════════════
   let P = {
     distM:            1.30,
     angSizeDeg:       0.833,
@@ -781,14 +1225,16 @@
     intervalSec:      2.0,
   };
 
-  let session    = { patient: '', trials: [], startTime: null };
-  let trialActive = false;
+  let session       = { patient: '', trials: [], startTime: null };
+  let trialActive   = false;
   let currentOrient = 0;
   let autoRotTimer  = null;
   let rafHandle     = null;
   let trialStart    = 0;
 
-  // ── Socket ────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // SOCKET
+  // ══════════════════════════════════════════════════════════
   const socket = io();
   socket.emit('register', 'controller');
 
@@ -797,38 +1243,110 @@
 
   socket.on('status', d => {
     const n = d.displays || 0;
-    connDot.className = 'conn-dot' + (n > 0 ? ' live' : '');
+    connDot.className     = 'conn-dot' + (n > 0 ? ' live' : '');
     connLabel.textContent = n === 0 ? 'No display' : `${n} display${n > 1 ? 's' : ''} live`;
   });
   socket.on('disconnect', () => {
-    connDot.className = 'conn-dot';
+    connDot.className     = 'conn-dot';
     connLabel.textContent = 'Disconnected';
   });
 
-  function cmd(obj) { socket.emit('command', obj); }
+  // ══════════════════════════════════════════════════════════
+  // LIVE PREVIEW
+  // ══════════════════════════════════════════════════════════
+  // Angular size range used in practice: 0.2° (smallest) → 3.0° (largest)
+  // We map this onto 15% → 90% of the box using a log scale so that
+  // small changes at the small end are still clearly visible.
+  const ANG_MIN = 0.2;
+  const ANG_MAX = 3.0;
 
-  // ── Distance buttons ──────────────────────────────────────
-  document.querySelectorAll('.dist-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.dist-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      P.distM = +btn.dataset.dist;
-      // Update angSizeDeg to match exact physical size for this distance
-      const mm = +btn.dataset.mm;
-      P.angSizeDeg = calcAngDeg(P.distM, mm / 1000);
-      syncAngSlider();
-      updateInfo();
-      cmd({ type: 'config', distM: P.distM, angSizeDeg: P.angSizeDeg });
-    });
-  });
+  const previewBox   = document.getElementById('previewBox');
+  const previewSvg   = document.getElementById('previewSvg');
+  const previewPath  = document.getElementById('previewPath');
+  const previewBadge = document.getElementById('previewBadge');
 
-  // α = 2 · arctan(physM / (2 × distM))  — exact formula from your reference
+  let previewState = {
+    visible:          false,
+    orientation:      0,
+    negativeContrast: false,
+    angSizeDeg:       P.angSizeDeg,
+  };
+
+  function renderPreview() {
+    const s = previewState;
+    previewBox.className = 'inline-preview-box'
+      + (s.negativeContrast ? ' neg'   : '')
+      + (!s.visible         ? ' blank' : '');
+    previewBadge.textContent = s.visible
+      ? (s.negativeContrast ? 'NEG' : 'POS') : 'BLANK';
+    previewPath.setAttribute('fill', s.negativeContrast ? '#000' : '#fff');
+
+    // Use the smaller dimension so the C always fits inside the box
+    const boxSize = Math.min(previewBox.offsetWidth, previewBox.offsetHeight);
+    if (boxSize === 0) return;   // not painted yet — ResizeObserver will retry
+
+    // Linear map: ANG_MIN → 10% of box,  ANG_MAX → 92% of box
+    // This makes every slider move clearly visible
+    const t  = (s.angSizeDeg - ANG_MIN) / (ANG_MAX - ANG_MIN);
+    const px = Math.round(boxSize * (0.10 + t * 0.82));
+
+    previewSvg.style.width  = px + 'px';
+    previewSvg.style.height = px + 'px';
+    previewPath.setAttribute('transform',
+      `translate(100 100) rotate(${s.orientation})`);
+  }
+
+  // ── cmd() — single source of truth: emit + sync preview ──
+  function cmd(obj) {
+    socket.emit('command', obj);
+    switch (obj.type) {
+      case 'show':
+        previewState.visible          = true;
+        previewState.orientation      = obj.orientation      ?? previewState.orientation;
+        previewState.negativeContrast = obj.negativeContrast ?? false;
+        previewState.angSizeDeg       = obj.angSizeDeg       ?? previewState.angSizeDeg;
+        break;
+      case 'rotate':
+        previewState.orientation = obj.orientation;
+        break;
+      case 'blank':
+        previewState.visible = false;
+        break;
+      case 'config':
+        if (obj.angSizeDeg !== undefined) previewState.angSizeDeg = obj.angSizeDeg;
+        break;
+    }
+    renderPreview();
+  }
+
+  // Defer first render until box is painted so offsetWidth > 0
+  requestAnimationFrame(() => renderPreview());
+
+  // Re-render on resize so the C always fills correctly
+  new ResizeObserver(() => renderPreview()).observe(previewBox);
+
+  // ══════════════════════════════════════════════════════════
+  // DISTANCE BUTTONS
+  // ══════════════════════════════════════════════════════════
   function calcAngDeg(distM, physM) {
     return 2 * Math.atan(physM / (2 * distM)) * (180 / Math.PI);
   }
 
-  // ── Angular size slider + steps ───────────────────────────
+  // (dist-btn click handler is wired inside the serial section below,
+  //  so it routes through sendCommand() and respects the move lock)
+
+  // ══════════════════════════════════════════════════════════
+  // ANGULAR SIZE SLIDER + STEP BUTTONS
+  // ══════════════════════════════════════════════════════════
   const angSlider = document.getElementById('angSlider');
+
+  function syncAngSlider() {
+    angSlider.value = P.angSizeDeg;
+    document.getElementById('angVal').textContent = P.angSizeDeg.toFixed(3) + '°';
+    // also keep preview in sync without emitting a command
+    previewState.angSizeDeg = P.angSizeDeg;
+    renderPreview();
+  }
 
   angSlider.addEventListener('input', () => {
     P.angSizeDeg = +angSlider.value;
@@ -848,11 +1366,6 @@
     });
   });
 
-  function syncAngSlider() {
-    angSlider.value = P.angSizeDeg;
-    document.getElementById('angVal').textContent = P.angSizeDeg.toFixed(3) + '°';
-  }
-
   function updateInfo() {
     const gapDeg    = P.angSizeDeg / 5;
     const gapArcmin = gapDeg * 60;
@@ -860,7 +1373,6 @@
     const physMm    = 2 * P.distM * Math.tan(angRad / 2) * 1000;
     const snellenD  = Math.round(6 * gapArcmin);
     const logmar    = Math.log10(gapArcmin);
-
     document.getElementById('iGap').textContent     = gapArcmin.toFixed(2) + '′';
     document.getElementById('iMm').textContent      = physMm.toFixed(2) + ' mm';
     document.getElementById('iSnellen').textContent = `6/${snellenD}`;
@@ -868,19 +1380,27 @@
   }
   updateInfo();
 
-  // ── Contrast ──────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // CONTRAST  (single listener per button — updates P + preview)
+  // ══════════════════════════════════════════════════════════
   document.getElementById('ctPos').addEventListener('click', () => {
     P.negativeContrast = false;
     document.getElementById('ctPos').classList.add('active');
     document.getElementById('ctNeg').classList.remove('active');
+    previewState.negativeContrast = false;
+    renderPreview();
   });
   document.getElementById('ctNeg').addEventListener('click', () => {
     P.negativeContrast = true;
     document.getElementById('ctNeg').classList.add('active');
     document.getElementById('ctPos').classList.remove('active');
+    previewState.negativeContrast = true;
+    renderPreview();
   });
 
-  // ── Orientation pad ───────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // ORIENTATION PAD
+  // ══════════════════════════════════════════════════════════
   const oBtns    = document.querySelectorAll('.o-btn[data-deg]');
   const oRandBtn = document.getElementById('oRandBtn');
 
@@ -905,10 +1425,12 @@
       : P.orientDeg;
   }
 
-  // ── Auto-rotate ───────────────────────────────────────────
-  const rotBadge      = document.getElementById('rotBadge');
-  const autorotToggle = document.getElementById('autorotToggle');
-  const intervalSlider= document.getElementById('intervalSlider');
+  // ══════════════════════════════════════════════════════════
+  // AUTO-ROTATE
+  // ══════════════════════════════════════════════════════════
+  const rotBadge       = document.getElementById('rotBadge');
+  const autorotToggle  = document.getElementById('autorotToggle');
+  const intervalSlider = document.getElementById('intervalSlider');
 
   autorotToggle.addEventListener('click', () => {
     P.autoRotate = !P.autoRotate;
@@ -956,7 +1478,9 @@
     rafHandle = requestAnimationFrame(tick);
   }
 
-  // ── Show / Blank ──────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // SHOW / BLANK
+  // ══════════════════════════════════════════════════════════
   document.getElementById('blankBtn').addEventListener('click', () => {
     trialActive = false;
     stopAutoRot();
@@ -977,7 +1501,9 @@
     if (P.autoRotate) startAutoRot();
   });
 
-  // ── Record result ─────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // RECORD RESULT
+  // ══════════════════════════════════════════════════════════
   function recordResult(correct) {
     if (!trialActive) { showToast('No active trial'); return; }
     trialActive = false;
@@ -1002,7 +1528,9 @@
   document.getElementById('okBtn').addEventListener('click',   () => recordResult(true));
   document.getElementById('failBtn').addEventListener('click', () => recordResult(false));
 
-  // ── Log table ─────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // TRIAL LOG TABLE
+  // ══════════════════════════════════════════════════════════
   const ARROW = { 0:'→', 90:'↓', 180:'←', 270:'↑' };
 
   function prependRow(t) {
@@ -1013,7 +1541,7 @@
     tr.className = t.correct ? 'ok' : 'fail';
     tr.innerHTML = `
       <td>${t.n}</td>
-      <td>${Math.round(t.distM * 100)} cm</td>
+      <td>${(t.distM * 100).toFixed(2)} cm</td>
       <td>${t.angSizeDeg.toFixed(3)}°</td>
       <td>${t.gapArcmin.toFixed(2)}′</td>
       <td>${ARROW[t.orient] ?? t.orient + '°'}</td>
@@ -1041,7 +1569,9 @@
       `<strong>${ok}/${t.length}</strong> correct &nbsp;·&nbsp; <strong>${pct}%</strong> &nbsp;·&nbsp; last: ${t[t.length-1].gapArcmin.toFixed(2)}′`;
   }
 
-  // ── Session ───────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // SESSION SAVE
+  // ══════════════════════════════════════════════════════════
   document.getElementById('newSessBtn').addEventListener('click', () => {
     if (session.trials.length && !confirm('Clear current session?')) return;
     session = { patient: document.getElementById('patientInput').value, trials: [], startTime: Date.now() };
@@ -1060,16 +1590,18 @@
     };
     try {
       const r = await fetch('/api/save-session', {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body:    JSON.stringify(payload),
       });
       const d = await r.json();
       showToast(`Saved: ${d.filename}`);
     } catch { showToast('Save failed'); }
   });
 
-  // ── Toast ─────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // TOAST
+  // ══════════════════════════════════════════════════════════
   let toastT = null;
   function showToast(msg) {
     const el = document.getElementById('toast');
@@ -1079,22 +1611,381 @@
     toastT = setTimeout(() => el.classList.remove('show'), 2200);
   }
 
-  // ── Keyboard shortcuts ────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // KEYBOARD SHORTCUTS
+  // ══════════════════════════════════════════════════════════
   document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT') return;
-    if (e.key === ' ')            { e.preventDefault(); document.getElementById('showBtn').click(); }
-    else if (e.key === 'b')       document.getElementById('blankBtn').click();
-    else if (e.key === 'c')       document.getElementById('okBtn').click();
-    else if (e.key === 'x')       document.getElementById('failBtn').click();
-    else if (e.key === 'd')       document.getElementById('themeBtn').click();
-    else if (e.key === 'ArrowUp') {
+    if      (e.key === ' ')         { e.preventDefault(); document.getElementById('showBtn').click(); }
+    else if (e.key === 'b')         document.getElementById('blankBtn').click();
+    else if (e.key === 'c')         document.getElementById('okBtn').click();
+    else if (e.key === 'x')         document.getElementById('failBtn').click();
+    else if (e.key === 'd')         document.getElementById('themeBtn').click();
+    else if (e.key === 'ArrowUp')   {
+      e.preventDefault();
       P.angSizeDeg = Math.min(3.0, Math.round((P.angSizeDeg + 0.05) * 1000) / 1000);
       syncAngSlider(); updateInfo();
-    } else if (e.key === 'ArrowDown') {
+    }
+    else if (e.key === 'ArrowDown') {
+      e.preventDefault();
       P.angSizeDeg = Math.max(0.2, Math.round((P.angSizeDeg - 0.05) * 1000) / 1000);
       syncAngSlider(); updateInfo();
     }
   });
+
+  // ══════════════════════════════════════════════════════════
+  // TABLET POSITION — Web Serial
+  //
+  // DESIGN RULES:
+  //  1. One command at a time. sendCommand() drops any call
+  //     while movePending=true. No queuing, no flooding.
+  //  2. Lock is released ONLY when position is stable —
+  //     no new POS: received for SETTLE_MS after the last one.
+  //     This correctly handles both short jog moves (one POS:)
+  //     and long GOTO moves (many intermediate POS: reports).
+  //  3. applyDistancePreset (angular size sync) only fires
+  //     after position settles — never mid-move.
+  //  4. Rail thumb updates in real-time from every POS:.
+  //  5. HOME has a long timeout (30s) since it traverses full rail.
+  //  6. All entry points (dist-btn, preset-btn, goto, jog, home)
+  //     go through sendCommand() — single gated path.
+  // ══════════════════════════════════════════════════════════
+
+  const SLIDER_PRESETS = [
+    { cm: 45,  distM: 0.45, mm: 6.55  },
+    { cm: 58,  distM: 0.58, mm: 8.44  },
+    { cm: 81,  distM: 0.81, mm: 11.78 },
+    { cm: 125, distM: 1.30, mm: 18.91 },
+    { cm: 130, distM: 1.30, mm: 18.91 },
+  ];
+  const SNAP_TOLERANCE_CM = 4;
+  const SETTLE_MS         = 400;  // position stable → move complete
+  const TIMEOUT_GOTO_MS   = 12000; // max for a full-rail GOTO
+  const TIMEOUT_HOME_MS   = 30000; // max for HOME (full traverse + switch search)
+  const TIMEOUT_JOG_MS    = 2000;  // max for a 0.1cm jog
+
+  let serialPort      = null;
+  let serialWriter    = null;
+  let serialReader    = null;
+  let serialConnected = false;
+  let sliderLinkOn    = true;
+  let inputFocused    = false;
+
+  // Move state
+  let movePending     = false;
+  let settleTimer     = null;   // fires when position stops changing
+  let safetyTimer     = null;   // fires if Arduino never finishes
+  let lastCmdType     = null;   // 'jog' | 'goto' | 'home' | 'status'
+
+  // ── Element refs ─────────────────────────────────────────
+  const sBtnFwd    = document.getElementById('sBtnFwd');
+  const sBtnBwd    = document.getElementById('sBtnBwd');
+  const sBtnHome   = document.getElementById('sBtnHome');
+  const sBtnEstop  = document.getElementById('sBtnEstop');
+  const sBtnGoto   = document.getElementById('sBtnGoto');
+  const sGotoInput = document.getElementById('sGotoInput');
+
+  // ── Control IDs managed by the lock ──────────────────────
+  const LOCKABLE = [
+    'sBtnFwd','sBtnBwd','sBtnHome','sBtnGoto',
+    'sGotoInput','sPreset45','sPreset58','sPreset81','sPreset130'
+  ];
+  // sBtnEstop intentionally excluded — stays active during moves for emergency use
+
+  // ── Lock / unlock ─────────────────────────────────────────
+  function lock() {
+    movePending = true;
+    LOCKABLE.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = true;
+    });
+    document.getElementById('sliderPosVal').style.opacity = '0.45';
+  }
+
+  function unlock() {
+    movePending = false;
+    clearTimeout(settleTimer);
+    clearTimeout(safetyTimer);
+    settleTimer = null;
+    safetyTimer = null;
+    lastCmdType = null;
+    if (!serialConnected) return;
+    LOCKABLE.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = false;
+    });
+    document.getElementById('sliderPosVal').style.opacity = '1';
+  }
+
+  // Called when position is confirmed stable (settle timer fired)
+  function onMoveComplete(cm) {
+    unlock();
+    // Snap angular size to matching preset — only after full stop
+    if (sliderLinkOn) {
+      let best = null, bestDist = Infinity;
+      for (const p of SLIDER_PRESETS) {
+        const d = Math.abs(p.cm - cm);
+        if (d < bestDist) { bestDist = d; best = p; }
+      }
+      if (best && bestDist <= SNAP_TOLERANCE_CM) applyDistancePreset(best);
+    }
+  }
+
+  // ── Single gated send path ────────────────────────────────
+  async function sendCommand(cmdStr, type = 'goto') {
+    if (!serialConnected || !serialWriter) return;
+
+    // Allow ESTOP even when a move is pending
+    if (movePending && !cmdStr.startsWith('ESTOP')) return;
+
+    lock();
+    lastCmdType = type;
+
+    // Safety timeout — if Arduino never responds, unlock
+    const timeout = type === 'home' ? TIMEOUT_HOME_MS
+                  : type === 'jog'  ? TIMEOUT_JOG_MS
+                  : TIMEOUT_GOTO_MS;
+    safetyTimer = setTimeout(() => {
+      unlock();
+      showToast('No response from Arduino — check connection');
+    }, timeout);
+
+    try {
+      await serialWriter.write(cmdStr + '\n');
+    } catch(e) {
+      unlock();
+      showToast('Serial write error');
+    }
+  }
+
+  // ── Jog buttons — one click = one 0.1cm step ─────────────
+  sBtnFwd.addEventListener('click', () => sendCommand('JOG_FWD', 'jog'));
+  sBtnBwd.addEventListener('click', () => sendCommand('JOG_BWD', 'jog'));
+  sBtnFwd.addEventListener('touchend', e => { e.preventDefault(); sendCommand('JOG_FWD', 'jog'); });
+  sBtnBwd.addEventListener('touchend', e => { e.preventDefault(); sendCommand('JOG_BWD', 'jog'); });
+
+  // ── Home ──────────────────────────────────────────────────
+  sBtnHome.addEventListener('click', () => sendCommand('HOME', 'home'));
+
+  // ── ESTOP button
+  sBtnEstop.addEventListener('click', () => sendCommand('ESTOP', 'estop'));
+
+  // ── Manual GOTO input ────────────────────────────────────
+  sGotoInput.addEventListener('focus', () => { inputFocused = true; });
+  sGotoInput.addEventListener('blur',  () => { inputFocused = false; });
+  sGotoInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.stopPropagation(); execGoto(); }
+  });
+  sBtnGoto.addEventListener('click', execGoto);
+
+  function execGoto() {
+    const val = parseFloat(sGotoInput.value);
+    if (isNaN(val) || val < 0 || val > 130) {
+      showToast('Enter 0 – 130 cm'); sGotoInput.focus(); return;
+    }
+    sendCommand('GOTO ' + val.toFixed(1), 'goto');
+  }
+
+  // ── Slider preset buttons ────────────────────────────────
+  document.querySelectorAll('.s-preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      sendCommand('GOTO ' + parseFloat(btn.dataset.cm).toFixed(1), 'goto');
+    });
+  });
+
+  // ── Distance buttons — also move slider if connected ─────
+  // Replaces the old sliderSend() call that bypassed the lock
+  const DIST_TO_CM = { '0.45': 45, '0.58': 58, '0.81': 81, '1.30': 130 };
+
+  document.querySelectorAll('.dist-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Always update angular size immediately (visual only, no Arduino)
+      document.querySelectorAll('.dist-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      P.distM      = +btn.dataset.dist;
+      P.angSizeDeg = calcAngDeg(P.distM, +btn.dataset.mm / 1000);
+      syncAngSlider();
+      updateInfo();
+      cmd({ type: 'config', distM: P.distM, angSizeDeg: P.angSizeDeg });
+
+      // Move Arduino through locked path
+      if (serialConnected) {
+        const cm = DIST_TO_CM[btn.dataset.dist];
+        if (cm !== undefined) sendCommand('GOTO ' + cm.toFixed(1), 'goto');
+      }
+    });
+  });
+
+  // ── No Web Serial warning ─────────────────────────────────
+  if (!('serial' in navigator)) {
+    document.getElementById('noSerialWarn').style.display = 'block';
+    document.getElementById('serialBtn').disabled = true;
+  }
+
+  // ── Link toggle ───────────────────────────────────────────
+  document.getElementById('sliderLinkToggle').addEventListener('click', function() {
+    sliderLinkOn = !sliderLinkOn;
+    this.className = 'toggle-sm' + (sliderLinkOn ? ' on' : '');
+  });
+
+  // ── Connect / disconnect ──────────────────────────────────
+  document.getElementById('serialBtn').addEventListener('click', async () => {
+    serialConnected ? await serialDisconnect() : await serialConnect();
+  });
+
+  async function serialConnect() {
+    try {
+      serialPort = await navigator.serial.requestPort();
+      await serialPort.open({ baudRate: 115200 });
+      const enc = new TextEncoderStream();
+      enc.readable.pipeTo(serialPort.writable);
+      serialWriter = enc.writable.getWriter();
+      setSerialConnected(true);
+      serialReadLoop();
+      // STATUS uses sendCommand so it respects the lock properly
+      setTimeout(() => sendCommand('STATUS', 'status'), 600);
+    } catch(e) {
+      showToast('Serial: ' + e.message);
+    }
+  }
+
+  async function serialDisconnect() {
+    unlock(); // clear all timers and state
+    try {
+      if (serialReader) { await serialReader.cancel(); serialReader = null; }
+      if (serialWriter) { await serialWriter.close();  serialWriter = null; }
+      if (serialPort)   { await serialPort.close();    serialPort   = null; }
+    } catch(e) {}
+    setSerialConnected(false);
+  }
+
+  async function serialReadLoop() {
+    const dec = new TextDecoderStream();
+    serialPort.readable.pipeTo(dec.writable);
+    serialReader = dec.readable.getReader();
+    let buf = '';
+    try {
+      while (true) {
+        const { value, done } = await serialReader.read();
+        if (done) break;
+        buf += value;
+        let nl;
+        while ((nl = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (line) handleSerialLine(line);
+        }
+      }
+    } catch(e) {
+      if (serialConnected) showToast('Serial lost: ' + e.message);
+      unlock();
+      setSerialConnected(false);
+    }
+  }
+
+  // ── Incoming serial lines ─────────────────────────────────
+  function handleSerialLine(line) {
+    const dbg = document.getElementById('sRawLine');
+    if (dbg) dbg.textContent = line.length > 50 ? line.slice(0,50)+'…' : line;
+
+    // Primary: "POS:45.0"
+    let m = line.match(/^POS:([\d.]+)/);
+    if (!m) m = line.match(/(?:new|current)CM=([\d.]+)/i); // legacy fallback
+    if (!m) return;
+
+    const cm = parseFloat(m[1]);
+    if (isNaN(cm) || cm < 0 || cm > 200) return;
+
+    // Always update rail thumb in real-time
+    updateSliderUI(cm);
+    socket.emit('slider_position', { cm });
+
+    // Settle detection: restart timer on every POS: received.
+    // When timer fires without interruption = position is stable = move done.
+    if (movePending) {
+      clearTimeout(settleTimer);
+      clearTimeout(safetyTimer); // reset safety on activity
+      const settle = lastCmdType === 'jog' ? 150 : SETTLE_MS;
+      settleTimer = setTimeout(() => onMoveComplete(cm), settle);
+    }
+  }
+
+  // ── Position from other browser tabs via socket ───────────
+  socket.on('slider_position', data => {
+    if (!serialConnected && typeof data.cm === 'number') {
+      updateSliderUI(data.cm);
+      if (sliderLinkOn) {
+        let best = null, bestDist = Infinity;
+        for (const p of SLIDER_PRESETS) {
+          const d = Math.abs(p.cm - data.cm);
+          if (d < bestDist) { bestDist = d; best = p; }
+        }
+        if (best && bestDist <= SNAP_TOLERANCE_CM) applyDistancePreset(best);
+      }
+    }
+  });
+
+  // ── Rail UI update (real-time, called on every POS:) ──────
+  function updateSliderUI(cm) {
+    const posEl   = document.getElementById('sliderPosVal');
+    const fillEl  = document.getElementById('sRailFill');
+    const thumbEl = document.getElementById('sRailThumb');
+
+    if (cm === null || cm === undefined) {
+      posEl.textContent   = '---';
+      posEl.style.opacity = '1';
+      fillEl.style.width  = '0%';
+      thumbEl.style.left  = '0%';
+      if (!inputFocused) sGotoInput.value = '';
+      document.querySelectorAll('.s-preset-btn').forEach(b => b.classList.remove('active'));
+      return;
+    }
+
+    posEl.textContent = cm.toFixed(2);
+    // home=130cm → LEFT(0%),  patient=0cm → RIGHT(100%)
+    const pct = Math.min(100, Math.max(0, ((130 - cm) / 130) * 100));
+    fillEl.style.width = pct + '%';
+    thumbEl.style.left = pct + '%';
+
+    if (!inputFocused) sGotoInput.value = cm.toFixed(2);
+
+    document.querySelectorAll('.s-preset-btn').forEach(btn => {
+      btn.classList.toggle('active', Math.abs(parseFloat(btn.dataset.cm) - cm) <= 2);
+    });
+  }
+
+  // ── Angular size sync (only after move settles) ───────────
+  function applyDistancePreset(preset) {
+    let matched = false;
+    document.querySelectorAll('.dist-btn').forEach(btn => {
+      const match = Math.abs(+btn.dataset.dist - preset.distM) < 0.001;
+      btn.classList.toggle('active', match);
+      if (match) matched = true;
+    });
+    if (!matched) return;
+    P.distM      = preset.distM;
+    P.angSizeDeg = calcAngDeg(preset.distM, preset.mm / 1000);
+    syncAngSlider();
+    updateInfo();
+    cmd({ type: 'config', distM: P.distM, angSizeDeg: P.angSizeDeg });
+  }
+
+  // ── Enable / disable controls on connect/disconnect ───────
+  function setSerialConnected(state) {
+    serialConnected = state;
+    document.getElementById('serialDot').className = 'serial-dot' + (state ? ' on' : '');
+    const btn = document.getElementById('serialBtn');
+    btn.textContent = state ? 'Disconnect' : 'Connect';
+    btn.className   = 'serial-btn' + (state ? ' connected' : '');
+    LOCKABLE.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = !state;
+    });
+    // ESTOP handled separately — enabled when connected, disabled when not
+    document.getElementById('sBtnEstop').disabled = !state;
+    if (!state) updateSliderUI(null);
+  }
+
 </script>
 </body>
 </html>

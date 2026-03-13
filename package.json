@@ -1,18 +1,29 @@
 {
   "name": "landolt-c-test2",
   "version": "1.0.0",
-  "description": "",
+  "description": "Landolt C visual acuity test",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "bash -c 'node bundle.js && pkg server.bundle.js --targets node18-win-x64,node18-mac-arm64,node18-linux-x64 --out-path dist'",
+    "bundle": "node bundle.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "pkg": {
+    "outputPath": "dist"
+  },
   "dependencies": {
     "express": "^5.2.1",
+    "open": "^8.4.2",
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
