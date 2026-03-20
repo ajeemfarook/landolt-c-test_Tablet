@@ -996,7 +996,7 @@
     </div>
   </div>
 
-  <!-- ── Tablet Position ──────────────────────────────────── -->
+  <!-- ── Tablet Position ──────────────────────────────────– -->
   <div>
     <div class="sec">Tablet Position</div>
     <div class="slider-panel">
@@ -1057,11 +1057,12 @@
           <button class="s-goto-btn" id="sBtnGoto" disabled>Go</button>
         </div>
 
-        <!-- Jog + Home + STOP (now 4 buttons) -->
-        <div class="s-jog-row" style="margin-top:8px">
+        <!-- Jog + Home + STOP + CLEAR (5 buttons now, STOP and CLEAR fill the space) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 4px; margin-bottom: 8px;">
           <button class="s-jog-btn" id="sBtnFwd"  disabled>← Closer</button>
           <button class="s-jog-btn home-jog" id="sBtnHome" disabled>⌂ Home</button>
           <button class="s-jog-btn estop-btn" id="sBtnEstop" disabled>⛔ STOP</button>
+          <button class="s-jog-btn estop-clear-btn" id="sBtnEstopClear" disabled style="border-color: var(--green); color: var(--green);">↻ Clear</button>
           <button class="s-jog-btn" id="sBtnBwd"  disabled>Farther →</button>
         </div>
 
@@ -1082,7 +1083,7 @@
 
 </aside>
 
-<!-- ── Main panel ────────────────────────────────────────────── -->
+<!-- ── Main panel ────────────────────────────────────────────– -->
 <main>
 
   <!-- Orientation pad + inline preview -->
@@ -1190,6 +1191,22 @@
 ══════════════════════════════════════════════════════════ -->
 <script src="/socket.io/socket.io.js"></script>
 <script>
+  // ══════════════════════════════════════════════════════════
+  // OFFSET COMPENSATION  ← NEW
+  // ══════════════════════════════════════════════════════════
+  // Applied to GOTO commands only (add to Arduino)
+  // Applied to display only (subtract from Arduino position)
+  // Internal logic uses raw Arduino values
+  const SLIDER_OFFSET_CM = 1.5;
+
+  function applyOffsetForCommand(cm) {
+    return cm + SLIDER_OFFSET_CM;
+  }
+
+  function removeOffsetForDisplay(cm) {
+    return cm - SLIDER_OFFSET_CM;
+  }
+
   // ══════════════════════════════════════════════════════════
   // THEME
   // ══════════════════════════════════════════════════════════
@@ -1770,6 +1787,17 @@
   // ── ESTOP button
   sBtnEstop.addEventListener('click', () => sendCommand('ESTOP', 'estop'));
 
+  // ── ESTOP CLEAR button (always sends, even during moves)
+  const sBtnEstopClear = document.getElementById('sBtnEstopClear');
+  sBtnEstopClear.addEventListener('click', async () => {
+    if (!serialConnected || !serialWriter) return;
+    try {
+      await serialWriter.write('ESTOP_CLEAR\n');
+    } catch(e) {
+      showToast('Serial write error');
+    }
+  });
+
   // ── Manual GOTO input ────────────────────────────────────
   sGotoInput.addEventListener('focus', () => { inputFocused = true; });
   sGotoInput.addEventListener('blur',  () => { inputFocused = false; });
@@ -1783,13 +1811,16 @@
     if (isNaN(val) || val < 0 || val > 130) {
       showToast('Enter 0 – 130 cm'); sGotoInput.focus(); return;
     }
-    sendCommand('GOTO ' + val.toFixed(1), 'goto');
+    // Apply offset when sending to Arduino
+    sendCommand('GOTO ' + applyOffsetForCommand(val).toFixed(1), 'goto');
   }
 
   // ── Slider preset buttons ────────────────────────────────
   document.querySelectorAll('.s-preset-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      sendCommand('GOTO ' + parseFloat(btn.dataset.cm).toFixed(1), 'goto');
+      const cm = parseFloat(btn.dataset.cm);
+      // Apply offset when sending to Arduino
+      sendCommand('GOTO ' + applyOffsetForCommand(cm).toFixed(1), 'goto');
     });
   });
 
@@ -1811,7 +1842,10 @@
       // Move Arduino through locked path
       if (serialConnected) {
         const cm = DIST_TO_CM[btn.dataset.dist];
-        if (cm !== undefined) sendCommand('GOTO ' + cm.toFixed(1), 'goto');
+        if (cm !== undefined) {
+          // Apply offset when sending to Arduino
+          sendCommand('GOTO ' + applyOffsetForCommand(cm).toFixed(1), 'goto');
+        }
       }
     });
   });
@@ -1888,31 +1922,32 @@
     const dbg = document.getElementById('sRawLine');
     if (dbg) dbg.textContent = line.length > 50 ? line.slice(0,50)+'…' : line;
 
-    // Primary: "POS:45.0"
+    // Primary: "POS:46.5" (raw Arduino value with offset baked in)
     let m = line.match(/^POS:([\d.]+)/);
     if (!m) m = line.match(/(?:new|current)CM=([\d.]+)/i); // legacy fallback
     if (!m) return;
 
-    const cm = parseFloat(m[1]);
-    if (isNaN(cm) || cm < 0 || cm > 200) return;
+    const cmRaw = parseFloat(m[1]);  // Raw from Arduino (46.5)
+    if (isNaN(cmRaw) || cmRaw < 0 || cmRaw > 200) return;
 
-    // Always update rail thumb in real-time
-    updateSliderUI(cm);
-    socket.emit('slider_position', { cm });
+    // Display to user: subtract offset (46.5 - 1.5 = 45.0)
+    const cmDisplay = removeOffsetForDisplay(cmRaw);
+    updateSliderUI(cmDisplay);
+    socket.emit('slider_position', { cm: cmDisplay });
 
-    // Settle detection: restart timer on every POS: received.
-    // When timer fires without interruption = position is stable = move done.
+    // Settle detection: use raw value for internal logic
     if (movePending) {
       clearTimeout(settleTimer);
       clearTimeout(safetyTimer); // reset safety on activity
       const settle = lastCmdType === 'jog' ? 150 : SETTLE_MS;
-      settleTimer = setTimeout(() => onMoveComplete(cm), settle);
+      settleTimer = setTimeout(() => onMoveComplete(cmRaw), settle);
     }
   }
 
   // ── Position from other browser tabs via socket ───────────
   socket.on('slider_position', data => {
     if (!serialConnected && typeof data.cm === 'number') {
+      // Socket already has the display-adjusted value
       updateSliderUI(data.cm);
       if (sliderLinkOn) {
         let best = null, bestDist = Infinity;
@@ -1941,6 +1976,7 @@
       return;
     }
 
+    // Display the offset-adjusted value
     posEl.textContent = cm.toFixed(2);
     // home=130cm → LEFT(0%),  patient=0cm → RIGHT(100%)
     const pct = Math.min(100, Math.max(0, ((130 - cm) / 130) * 100));
@@ -1981,8 +2017,9 @@
       const el = document.getElementById(id);
       if (el) el.disabled = !state;
     });
-    // ESTOP handled separately — enabled when connected, disabled when not
+    // ESTOP and ESTOP_CLEAR buttons handled separately — enabled when connected, disabled when not
     document.getElementById('sBtnEstop').disabled = !state;
+    document.getElementById('sBtnEstopClear').disabled = !state;
     if (!state) updateSliderUI(null);
   }
 
